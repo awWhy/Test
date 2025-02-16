@@ -281,7 +281,13 @@ const saveConsole = async() => {
 
     if (lower === 'copy' || lower === 'global_copy') {
         const save = lower === 'global_copy' ? saveGlobalSettings(true) : saveGame(true);
-        if (save !== null) { void navigator.clipboard.writeText(save); }
+        if (save !== null) {
+            if ('clipboard' in navigator && 'writeText' in navigator.clipboard) {
+                void navigator.clipboard.writeText(save);
+            } else {
+                void Alert(`Could not copy text into clipboard\nYour browser may not support it, or the connection may be insecure\n\nCopy the save string manually:\n${save}`);
+            }
+        }
     } else if (lower === 'delete' || lower === 'clear' || lower === 'global_reset') {
         pauseGame();
         if (lower === 'delete') {
