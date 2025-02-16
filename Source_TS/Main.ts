@@ -190,6 +190,9 @@ export const pauseGameUser = () => {
     void simulateOffline(offline);
 };
 
+export const LOCAL_STORAGE_SAVE_INDEX = 'save';
+export const LOCAL_STORAGE_SETTINGS_INDEX = 'fundamentalSettings';
+
 const saveGame = (noSaving = false): string | null => {
     if (global.offline.active) { return null; }
     try {
@@ -200,7 +203,7 @@ const saveGame = (noSaving = false): string | null => {
         clone.fileName = String.fromCharCode(...new TextEncoder().encode(clone.fileName));
         const save = btoa(JSON.stringify(clone));
         if (!noSaving) {
-            localStorage.setItem('save', save);
+            localStorage.setItem(LOCAL_STORAGE_SAVE_INDEX, save);
             clearInterval(global.intervalsId.autoSave);
             if (!global.paused) { global.intervalsId.autoSave = setInterval(saveGame, globalSave.intervals.autoSave); }
             getId('isSaved').textContent = 'Saved';
@@ -278,13 +281,19 @@ const saveConsole = async() => {
 
     if (lower === 'copy' || lower === 'global_copy') {
         const save = lower === 'global_copy' ? saveGlobalSettings(true) : saveGame(true);
-        if (save !== null) { void navigator.clipboard.writeText(save); }
+        if (save !== null) {
+            if ('clipboard' in navigator && 'writeText' in navigator.clipboard) {
+                void navigator.clipboard.writeText(save);
+            } else {
+                void Alert(`Could not copy text into clipboard\nYour browser may not support it, or the connection may be insecure\n\nCopy the save string manually:\n${save}`);
+            }
+        }
     } else if (lower === 'delete' || lower === 'clear' || lower === 'global_reset') {
         pauseGame();
         if (lower === 'delete') {
-            localStorage.removeItem('save');
+            localStorage.removeItem(LOCAL_STORAGE_SAVE_INDEX);
         } else if (lower === 'global_reset') {
-            localStorage.removeItem('fundamentalSettings');
+            localStorage.removeItem(LOCAL_STORAGE_SETTINGS_INDEX);
         } else { localStorage.clear(); }
         window.location.reload();
         void Alert('Awaiting game reload');
@@ -304,7 +313,7 @@ const saveConsole = async() => {
         if (value.length < 20) { return void Alert(`Input '${value}' doesn't match anything`); }
         if (lower.includes('global_')) {
             if (!await Confirm("Press 'Confirm' to load input as a new global settings, this will reload page\n(Input is too long to be displayed)")) { return; }
-            localStorage.setItem('fundamentalSettings', value[6] === '_' ? value.substring(7) : value);
+            localStorage.setItem(LOCAL_STORAGE_SETTINGS_INDEX, value[6] === '_' ? value.substring(7) : value);
             window.location.reload();
             void Alert('Awaiting game reload');
         } else {
@@ -453,7 +462,7 @@ try { //Start everything
     preventImageUnload();
     const body = document.body;
 
-    const globalSettings = localStorage.getItem('fundamentalSettings');
+    const globalSettings = localStorage.getItem(LOCAL_STORAGE_SETTINGS_INDEX);
     if (globalSettings !== null) {
         try {
             Object.assign(globalSave, JSON.parse(atob(globalSettings)));
@@ -690,7 +699,7 @@ try { //Start everything
     }
 
     let oldVersion = player.version;
-    const save = localStorage.getItem('save');
+    const save = localStorage.getItem(LOCAL_STORAGE_SAVE_INDEX);
     if (save !== null) {
         oldVersion = updatePlayer(JSON.parse(atob(save)));
     } else {
@@ -1334,7 +1343,7 @@ try { //Start everything
     let exported = false;
     getId('exportError').addEventListener('click', () => {
         exported = true;
-        const save = localStorage.getItem('save');
+        const save = localStorage.getItem(LOCAL_STORAGE_SAVE_INDEX);
         if (save === null) { return void Alert('No save file detected'); }
         const a = document.createElement('a');
         a.href = `data:text/plain,${save}`;
@@ -1343,7 +1352,7 @@ try { //Start everything
     });
     getId('deleteError').addEventListener('click', async() => {
         if (!exported && !await Confirm("Recommended to export save file first\nPress 'Confirm' to confirm and delete your save file")) { return; }
-        localStorage.removeItem('save');
+        localStorage.removeItem(LOCAL_STORAGE_SAVE_INDEX);
         window.location.reload();
         void Alert('Awaiting game reload');
     });
