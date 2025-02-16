@@ -1,5 +1,5 @@
 import { assignHotkeys, removeHotkey } from './Hotkeys';
-import { getId, getQuery, globalSaveStart, pauseGame } from './Main';
+import { getId, getQuery, globalSaveStart, LOCAL_STORAGE_SETTINGS_INDEX, pauseGame } from './Main';
 import { deepClone, global, player } from './Player';
 import { assignResetInformation } from './Stage';
 import type { globalSaveType, hotkeysList } from './Types';
@@ -55,7 +55,7 @@ export const saveGlobalSettings = (noSaving = false): string => {
     const clone = { ...globalSave };
     clone.hotkeys = hotkeysClone;
     const save = btoa(JSON.stringify(clone));
-    if (!noSaving) { localStorage.setItem('fundamentalSettings', save); }
+    if (!noSaving) { localStorage.setItem(LOCAL_STORAGE_SETTINGS_INDEX, save); }
     return save;
 };
 
